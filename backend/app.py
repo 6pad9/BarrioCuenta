@@ -29,7 +29,7 @@ def create_app(url=None, testing=False):
     engine,DB=database(url or database_url(),migration_url=None if url else migration_url())
     app.config.update(TESTING=testing,DB=DB,ENGINE=engine,DEV=dev,MAILBOX={})
     app.config['MAX_CONTENT_LENGTH']=3*1024*1024
-    security={k:int(os.getenv(k,str(v))) for k,v in dict(LOGIN_MAX_ATTEMPTS=8,LOGIN_WINDOW_SECONDS=300,OTP_SECONDS=300,OTP_MAX_ATTEMPTS=5,SESSION_SECONDS=28800,INVITATION_HOURS=24).items()}
+    security={k:int(os.getenv(k,str(v))) for k,v in dict(LOGIN_MAX_ATTEMPTS=8,LOGIN_WINDOW_SECONDS=300,OTP_SECONDS=300,OTP_MAX_ATTEMPTS=5,SESSION_SECONDS=28800,INVITATION_HOURS=24,RESET_SECONDS=900).items()}
     for value in security.values():
         if value <= 0: raise ValueError('Los parámetros de seguridad deben ser positivos.')
     def now():
@@ -144,7 +144,7 @@ def create_app(url=None, testing=False):
             token=g.db.get(Token,H(cookie))
             if token and token.kind=='session' and token.expires>real_now().isoformat():
                 g.user=g.db.get(User,token.user_id);g.token=token
-        if request.path.startswith('/api') and request.method in ('POST','PUT','DELETE') and g.user and request.path not in ('/api/login','/api/verify'):
+        if request.path.startswith('/api') and request.method in ('POST','PUT','DELETE') and g.user and request.path not in ('/api/login','/api/verify','/api/password/forgot','/api/password/reset'):
             if not hmac.compare_digest(request.headers.get('X-CSRF-Token',''),g.token.secret):fail('La sesión debe actualizarse antes de continuar.',403)
     cuts_lock=Lock()
     last_cuts=[float('-inf')]
@@ -191,11 +191,58 @@ def create_app(url=None, testing=False):
     def me():
         require(('system','business','client'))
         return jsonify(user={k:getattr(g.user,k) for k in ('id','name','email','role','store_id','customer_id')},csrf=g.token.secret,now=now().isoformat(),development=dev,store=obj(g.db.get(Store,g.user.store_id)) if g.user.store_id else None)
+    def validate_password(password,confirmation=None):
+        if not isinstance(password,str) or not 12<=len(password)<=256 or not any(c.isupper() for c in password) or not any(c.islower() for c in password) or not any(c.isdigit() for c in password):
+            fail('Usa de 12 a 256 caracteres, con mayúscula, minúscula y número.')
+        if confirmation is not None and password!=confirmation:fail('Las contraseñas no coinciden.')
+    def locked_user(user_id):
+        return g.db.execute(select(User).where(User.id==user_id).with_for_update().execution_options(populate_existing=True)).scalar_one_or_none()
+    def save_password(user,password,action):
+        user.password=generate_password_hash(password)
+        g.db.query(Token).filter_by(user_id=user.id).delete(synchronize_session=False)
+        audit(action,'Contraseña actualizada; sesiones anteriores cerradas.',user.store_id,entity='users',entity_id=user.id)
+        g.db.commit()
+        response=jsonify(message='Contraseña actualizada. Inicia sesión con tu nueva contraseña.')
+        response.delete_cookie('bc_session');return response
+    @app.post('/api/password/forgot')
+    def forgot_password():
+        email=str(body().get('email','')).strip().lower()[:200]
+        throttle('password-reset-ip');throttle('password-reset:'+email)
+        response=dict(message='Si el correo tiene una cuenta activa, recibirás un enlace para recuperar tu contraseña. Revisa también el correo no deseado.')
+        user=g.db.execute(select(User).where(User.email==email).with_for_update()).scalar_one_or_none()
+        if user and user.activated:
+            raw=secrets.token_urlsafe(40)
+            g.db.query(Token).filter_by(user_id=user.id,kind='password_reset').delete()
+            g.db.add(Token(id=H(raw),user_id=user.id,kind='password_reset',secret=H(user.password),expires=(real_now()+timedelta(seconds=security['RESET_SECONDS'])).isoformat()))
+            link=os.getenv('PUBLIC_URL','http://127.0.0.1:5000').rstrip('/')+'/#reset/'+raw
+            try:deliver(user,'Recupera tu contraseña de BarrioCuenta',f'Abre este enlace para crear una nueva contraseña:\n{link}\nVence en {security["RESET_SECONDS"]//60} minutos y solo puede usarse una vez. Si no lo solicitaste, ignora este correo.',development=dev)
+            except DeliveryError:
+                g.db.rollback();app.logger.warning('No se pudo enviar un correo de recuperación.');return jsonify(response),202
+            audit('SOLICITAR_RECUPERACION','Enlace de recuperación solicitado',user.store_id,entity='users',entity_id=user.id)
+            g.db.commit()
+            if development_mailbox(dev):response['development_link']=link
+        return jsonify(response),202
+    @app.post('/api/password/reset')
+    def reset_password():
+        d=body();token_id=H(str(d.get('token','')));candidate=g.db.get(Token,token_id)
+        if not candidate or candidate.kind!='password_reset':fail('El enlace no es válido o ya venció. Solicita uno nuevo.')
+        user=locked_user(candidate.user_id)
+        token=g.db.execute(select(Token).where(Token.id==token_id).with_for_update().execution_options(populate_existing=True)).scalar_one_or_none()
+        if not user or not user.activated or not token or token.kind!='password_reset' or token.expires<=real_now().isoformat() or not hmac.compare_digest(token.secret,H(user.password)):
+            fail('El enlace no es válido o ya venció. Solicita uno nuevo.')
+        validate_password(d.get('password'),d.get('confirmation') or '')
+        return save_password(user,d['password'],'RECUPERAR_CONTRASENA')
+    @app.post('/api/password/change')
+    def change_password():
+        require(('system','business','client'));d=body();throttle('password-change:'+str(g.user.id));user=locked_user(g.user.id)
+        if not check_password_hash(user.password,str(d.get('current_password',''))):fail('La contraseña actual no es correcta.',401)
+        validate_password(d.get('password'),d.get('confirmation') or '')
+        return save_password(user,d['password'],'CAMBIAR_CONTRASENA')
     @app.post('/api/login')
     def login():
         data=body();email=str(data.get('email','')).strip().lower()
         throttle(email)
-        user=g.db.query(User).filter_by(email=email).first()
+        user=g.db.execute(select(User).where(User.email==email).with_for_update().execution_options(populate_existing=True)).scalar_one_or_none()
         if not user or not user.activated or not check_password_hash(user.password,data.get('password','')):fail('Usuario o contraseña incorrectos.',401)
         g.user=user;audit('LOGIN','Contraseña verificada',user.store_id,entity='users',entity_id=user.id)
         return challenge_for(user)
@@ -280,11 +327,17 @@ def create_app(url=None, testing=False):
         return jsonify([{k:getattr(u,k) for k in ('id','name','email','role','store_id')} for u in g.db.query(User).filter(User.role.in_(('system','business')))])
     @app.post('/api/users')
     def create_user():
-        require(('system',));d=body();email=d['email'].strip().lower();password=d.get('password','');store=g.db.get(Store,int(d['store_id']))
-        if not store or not store.active or '@' not in email or len(password)<10 or not any(c.isupper() for c in password) or not any(c.isdigit() for c in password):fail('Verifica tienda, correo y contraseña: mínimo diez caracteres, una mayúscula y un número.')
-        u=User(name=d['name'].strip(),email=email,role='business',store_id=store.id,password=generate_password_hash(password))
-        if not u.name:fail('El nombre es obligatorio.')
-        g.db.add(u);g.db.flush();audit('CREAR_ACCESO',f'Administrador {u.id} asignado a tienda {store.id}',entity='users',entity_id=u.id);g.db.commit();return jsonify(id=u.id)
+        require(('system',));d=body();email=str(d.get('email','')).strip().lower();password=d.get('password','');role=d.get('role','business')
+        if role not in ('system','business'):fail('Selecciona un perfil de administrador válido.')
+        store=None
+        if role=='business':
+            store=g.db.get(Store,int(d['store_id']))
+            if not store or not store.active:fail('Selecciona una tienda activa.')
+        if '@' not in email or len(email)>200:fail('Indica un correo válido.')
+        validate_password(password)
+        u=User(name=str(d.get('name','')).strip(),email=email,role=role,store_id=store.id if store else None,password=generate_password_hash(password))
+        if not u.name or len(u.name)>160:fail('Indica un nombre de hasta 160 caracteres.')
+        g.db.add(u);g.db.flush();audit('CREAR_ACCESO',f'Administrador {u.id}, perfil {role}',entity='users',entity_id=u.id);g.db.commit();return jsonify(id=u.id)
     @app.post('/api/invitations')
     def invite():
         require(('business',));d=body();a=account(int(d['account_id']),True);email=str(d['email']).strip().lower()

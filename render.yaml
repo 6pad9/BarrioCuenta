@@ -1,0 +1,31 @@
+services:
+  - type: web
+    name: barriocuenta
+    runtime: docker
+    plan: free
+    region: virginia
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    envVars:
+      - key: APP_MODE
+        value: production
+      - key: MAIL_PROVIDER
+        value: brevo
+      - key: AUTO_PROCESS_CUTS
+        value: "1"
+      - key: AUTO_CUTS_INTERVAL_SECONDS
+        value: "60"
+      - key: MAIL_FROM_NAME
+        value: BarrioCuenta
+      - key: DATABASE_URL
+        sync: false
+      - key: DATABASE_URL_UNPOOLED
+        sync: false
+      - key: BREVO_API_KEY
+        sync: false
+      - key: MAIL_FROM_EMAIL
+        sync: false
+      - key: BOOTSTRAP_ADMIN_EMAIL
+        sync: false
+      - key: BOOTSTRAP_ADMIN_PASSWORD
+        sync: false

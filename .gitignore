@@ -1,0 +1,36 @@
+node_modules/
+dist/
+.venv/
+__pycache__/
+*.pyc
+*.db
+.env
+runtime/
+*.db-shm
+*.db-wal
+
+vendor/
+tools/
+*.dump
+respaldos*/
+vite.check.config.mjs
+
+# Archivos de conexión y exportaciones privadas
+.env.*
+!.env.example
+!.env.render.example
+*.sql
+*.zip
+*.pem
+*.key
+*.crt
+
+.build-tools/
+release/
+
+# Vinculación local de Neon
+.neon
+.neon/
+.neon.json
+.neon.env
+

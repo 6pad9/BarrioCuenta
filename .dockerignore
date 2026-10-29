@@ -1,0 +1,14 @@
+*
+!Dockerfile
+!requirements.txt
+!package.json
+!package-lock.json
+!index.html
+!vite.config.js
+!src/
+!src/**
+!backend/
+!backend/**
+**/__pycache__
+**/*.pyc
+**/.env*

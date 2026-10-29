@@ -1,0 +1,304 @@
+<!doctype html><html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>Manual de despliegue de BarrioCuenta</title><style>body{font:17px/1.65 system-ui,sans-serif;color:#243a32;background:#f5f4ef;margin:0}main{max-width:980px;margin:30px auto;background:white;padding:45px;border-radius:12px}h1,h2{color:#152f25;line-height:1.2}h1{font-size:34px}h2{margin-top:48px;font-size:25px;scroll-margin-top:20px}a{color:#14634e}table{border-collapse:collapse;width:100%;font-size:15px;margin:20px 0;display:block;overflow:auto}th,td{border:1px solid #d3dbd5;padding:11px;text-align:left}th{background:#eaf1ec}code{font:14px/1.5 ui-monospace,monospace;background:#f0f2ef;padding:2px 4px;overflow-wrap:anywhere}pre{white-space:pre-wrap;background:#f0f2ef;padding:18px;border-radius:8px}.controls{display:flex;justify-content:space-between;gap:15px;align-items:center}.controls button{padding:10px 18px;border:1px solid #9daf9f;background:white;border-radius:7px;cursor:pointer}@media(max-width:600px){main{margin:0;padding:22px;border-radius:0}h1{font-size:28px}}@media print{body{background:white}main{padding:0;margin:0;max-width:none}.controls{display:none}h2{break-after:avoid}tr{break-inside:avoid}a{color:inherit;text-decoration:none}}</style><main><div class="controls"><span>BarrioCuenta · Publicación académica</span><button onclick="window.print()">Imprimir o guardar PDF</button></div><h1 id="manual-para-publicar-barriocuenta-gratis">Manual para publicar BarrioCuenta gratis</h1>
+<p>Guía para Pablo Chumacero. Preparada el 29 de octubre de 2026.</p>
+<p>El resultado será una dirección HTTPS pública que podrás compartir con tu grupo y abrir aunque tu computadora esté apagada. Usaremos Render para la aplicación, Neon para PostgreSQL y Brevo para los códigos e invitaciones por correo. El código ya está adaptado; falta configurar tus cuentas y publicar.</p>
+<h2 id="estado-de-neon-ya-configurado">Estado de Neon ya configurado</h2>
+<p>El proyecto existente <a href="https://console.neon.tech/app/projects/super-base-33383770/">super-base-33383770</a> de la organización Pablo está vinculado a la copia de nube, rama production. La herramienta oficial guardó DATABASE_URL y DATABASE_URL_UNPOOLED en el archivo privado .env.local. Usa esos dos valores en Render; no subas ese archivo a GitHub. La configuración de la copia de nube está en modo producción y no incluye credenciales de Brevo ni una contraseña inicial elegida por ti.</p>
+<p>El esquema se probó primero en una rama temporal con datos ficticios y luego se aplicó a production sin cargar datos de muestra. La publicación de la web y el correo real siguen pendientes de tus cuentas de Render y Brevo. Si utilizas este proyecto ya configurado, no crees otro en el apartado 2.</p>
+<h2 id="1-que-necesitas-antes-de-empezar">1 Qué necesitas antes de empezar</h2>
+<ul>
+<li>Una cuenta en <a href="https://github.com">GitHub</a>, otra en <a href="https://neon.com">Neon</a>, otra en <a href="https://www.brevo.com">Brevo</a> y otra en <a href="https://render.com">Render</a>.</li>
+<li>Acceso al correo que usarás para entrar como administrador. Puedes utilizar chumaceropablo16@gmail.com.</li>
+<li>El ZIP de despliegue entregado junto a este manual.</li>
+<li>Una contraseña nueva de al menos 12 caracteres, con mayúscula, minúscula y número. Guárdala en tu administrador de contraseñas.</li>
+</ul>
+<p>Selecciona los planes <strong>Free</strong>. No necesitas comprar un dominio: Render proporciona una dirección terminada en <code>onrender.com</code> y HTTPS. Si algún proveedor solicita verificaciones de cuenta, complétalas antes de continuar; la elegibilidad y las condiciones gratuitas dependen del proveedor.</p>
+<p>La publicación inicial utiliza una base nueva. No traslada automáticamente los registros de tu computadora. La aplicación local y sus datos permanecen separados. Este procedimiento está pensado para la presentación académica con datos ficticios.</p>
+<h2 id="2-crear-la-base-en-neon">2 Crear la base en Neon</h2>
+<ol>
+<li>Entra en <a href="https://console.neon.tech">la consola de Neon</a> y crea un proyecto.</li>
+<li>Ponle un nombre reconocible, por ejemplo <code>barriocuenta</code>.</li>
+<li>Selecciona el plan <strong>Free</strong>. Si está disponible, elige una región cercana a Virginia, donde situaremos Render.</li>
+<li>Abre <strong>Connect</strong>. Selecciona tu base, por ejemplo <code>neondb</code>, y una conexión PostgreSQL.</li>
+<li>Activa <strong>Connection pooling</strong> si aparece. El servidor suele contener <code>-pooler</code>.</li>
+<li>Copia <strong>solo la cadena de conexión</strong>, sin el comando <code>psql</code> ni sus comillas externas. Su forma es:</li>
+</ol>
+<pre><code class="language-text">postgresql://USUARIO:CONTRASEÑA@SERVIDOR.neon.tech/neondb?sslmode=require&amp;channel_binding=require
+</code></pre>
+<ol>
+<li>Guárdala temporalmente de forma privada. Se pegará como <code>DATABASE_URL</code> en Render.</li>
+<li>Desactiva Connection pooling, copia también la conexión directa y guárdala como <code>DATABASE_URL_UNPOOLED</code>. La aplicación usa la agrupada para las operaciones y la directa para actualizar el esquema.</li>
+</ol>
+<p>Conserva los parámetros de seguridad que Neon incluya, como <code>sslmode=require</code> y <code>channel_binding=require</code>. BarrioCuenta adapta automáticamente el controlador a psycopg. No sustituyas la dirección por <code>localhost</code> y no subas esa cadena a GitHub.</p>
+<p><strong>Resultado esperado:</strong> tienes una base PostgreSQL vacía y su conexión privada.</p>
+<h2 id="3-preparar-el-correo-en-brevo">3 Preparar el correo en Brevo</h2>
+<ol>
+<li>Entra en Brevo con su plan gratuito y completa las verificaciones de cuenta que solicite.</li>
+<li>Busca <strong>Settings / Configuración → Senders, domains &amp; dedicated IPs / Remitentes y dominios</strong>. Los nombres pueden variar según el idioma.</li>
+<li>Añade un remitente: nombre <code>BarrioCuenta</code> y una dirección de correo que controles.</li>
+<li>Abre el mensaje de verificación que llegue a esa dirección y confirma el remitente.</li>
+<li>Si Brevo solicita autenticar un dominio propio o aprobar el envío transaccional, termina ese proceso antes del despliegue. No inventes un remitente <code>@barriocuenta.local</code> o un dominio que no controles. El uso de direcciones de proveedores gratuitos está sujeto a las condiciones de Brevo y puede afectar la entrega.</li>
+<li>Busca <strong>SMTP &amp; API → API Keys / Claves API</strong> y crea una clave para este proyecto.</li>
+<li>Guarda la <strong>clave API</strong>, no la contraseña de SMTP. Se pegará como <code>BREVO_API_KEY</code> en Render.</li>
+<li>Anota también el correo del remitente verificado: será <code>MAIL_FROM_EMAIL</code>.</li>
+</ol>
+<p>Render gratuito bloquea los puertos SMTP habituales. Por eso BarrioCuenta usa la API HTTPS de Brevo. En internet ya no habrá un buzón Mailpit para leer códigos: el usuario los recibirá en su correo real.</p>
+<p><strong>Resultado esperado:</strong> tienes un remitente habilitado y una clave API. No es necesario enviar un correo de prueba desde el código antes de configurar Render.</p>
+<h2 id="4-subir-el-codigo-a-github">4 Subir el código a GitHub</h2>
+<ol>
+<li>Extrae el ZIP de despliegue en una carpeta nueva de tu computadora.</li>
+<li>En GitHub, pulsa <strong>New repository / Nuevo repositorio</strong>.</li>
+<li>Nombre sugerido: <code>barriocuenta</code>. Selecciona <strong>Private / Privado</strong> y crea el repositorio.</li>
+<li>Pulsa <strong>uploading an existing file</strong> o <strong>Add file → Upload files</strong>.</li>
+<li>Abre la carpeta extraída y arrastra <strong>su contenido</strong>, incluyendo las carpetas <code>backend</code>, <code>src</code>, <code>tests</code> y <code>docs</code>.</li>
+<li>Comprueba que <code>Dockerfile</code>, <code>render.yaml</code>, <code>.dockerignore</code>, <code>.gitignore</code>, <code>requirements.txt</code> y <code>package.json</code> queden en la raíz del repositorio. No subas únicamente el archivo ZIP. Tampoco coloques todo dentro de una carpeta adicional.</li>
+<li>Escribe un mensaje, por ejemplo <code>Preparar despliegue de BarrioCuenta</code>, y pulsa <strong>Commit changes</strong>.</li>
+</ol>
+<p>El paquete de despliegue no incluye la base local, contraseñas reales, mensajes, certificados ni respaldos. No añadas <code>.env</code>, <code>runtime</code>, <code>vendor</code>, <code>tools</code>, <code>node_modules</code>, archivos <code>.db</code> o <code>.dump</code>. La plantilla <code>.env.render.example</code> está vacía y sirve como referencia; no debes rellenarla con secretos y subirla.</p>
+<p>Si Windows oculta las extensiones, verifica que el archivo se llame exactamente <code>Dockerfile</code>, sin <code>.txt</code> al final.</p>
+<p><strong>Resultado esperado:</strong> al abrir el repositorio ves <code>Dockerfile</code> y <code>backend</code> directamente en su página principal.</p>
+<h2 id="5-crear-el-servicio-en-render">5 Crear el servicio en Render</h2>
+<ol>
+<li>Entra en <a href="https://dashboard.render.com">el panel de Render</a>.</li>
+<li>Pulsa <strong>New → Web Service</strong>.</li>
+<li>Conecta GitHub y concede acceso al repositorio privado <code>barriocuenta</code>.</li>
+<li>Selecciona ese repositorio y la rama que acabas de subir, normalmente <code>main</code>.</li>
+<li>Configura los campos:</li>
+</ol>
+<table>
+<thead>
+<tr>
+<th>Campo</th>
+<th>Valor</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Name</td>
+<td><code>barriocuenta</code> o un nombre disponible</td>
+</tr>
+<tr>
+<td>Language / Runtime</td>
+<td><strong>Docker</strong></td>
+</tr>
+<tr>
+<td>Region</td>
+<td><strong>Virginia</strong>, si está disponible</td>
+</tr>
+<tr>
+<td>Root Directory</td>
+<td>Vacío, si subiste el contenido a la raíz</td>
+</tr>
+<tr>
+<td>Dockerfile Path</td>
+<td><code>./Dockerfile</code></td>
+</tr>
+<tr>
+<td>Docker Command</td>
+<td>Vacío; el archivo ya contiene el arranque</td>
+</tr>
+<tr>
+<td>Instance Type</td>
+<td><strong>Free</strong></td>
+</tr>
+<tr>
+<td>Health Check Path</td>
+<td><code>/api/health</code></td>
+</tr>
+</tbody>
+</table>
+<p>No necesitas instalar Docker en tu computadora: Render construye la imagen. No agregues un comando de construcción de Python o Node: el <code>Dockerfile</code> instala Python, compila React e inicia Gunicorn.</p>
+<p><strong>No crees una base Render Postgres gratuita para esta guía:</strong> usaremos Neon. La base gratuita de Render caduca a los 30 días según sus condiciones actuales.</p>
+<h2 id="6-completar-las-variables-privadas">6 Completar las variables privadas</h2>
+<p>Antes de pulsar Deploy, abre <strong>Environment / Variables de entorno</strong>. Añade cada fila por separado; no incluyas comillas externas en los valores del panel.</p>
+<table>
+<thead>
+<tr>
+<th>Variable</th>
+<th>Valor que debes escribir</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>APP_MODE</code></td>
+<td><code>production</code></td>
+</tr>
+<tr>
+<td><code>MAIL_PROVIDER</code></td>
+<td><code>brevo</code></td>
+</tr>
+<tr>
+<td><code>AUTO_PROCESS_CUTS</code></td>
+<td><code>1</code></td>
+</tr>
+<tr>
+<td><code>AUTO_CUTS_INTERVAL_SECONDS</code></td>
+<td><code>60</code></td>
+</tr>
+<tr>
+<td><code>DATABASE_URL</code></td>
+<td>Cadena completa copiada de Neon</td>
+</tr>
+<tr>
+<td><code>DATABASE_URL_UNPOOLED</code></td>
+<td>Conexión directa de Neon, sin <code>-pooler</code> en el servidor</td>
+</tr>
+<tr>
+<td><code>BREVO_API_KEY</code></td>
+<td>Clave API creada en Brevo</td>
+</tr>
+<tr>
+<td><code>MAIL_FROM_EMAIL</code></td>
+<td>Dirección del remitente verificado en Brevo</td>
+</tr>
+<tr>
+<td><code>MAIL_FROM_NAME</code></td>
+<td><code>BarrioCuenta</code></td>
+</tr>
+<tr>
+<td><code>BOOTSTRAP_ADMIN_EMAIL</code></td>
+<td>Tu correo real de acceso; por ejemplo chumaceropablo16@gmail.com</td>
+</tr>
+<tr>
+<td><code>BOOTSTRAP_ADMIN_PASSWORD</code></td>
+<td>Tu contraseña nueva de 12 caracteres o más</td>
+</tr>
+<tr>
+<td><code>BOOTSTRAP_ADMIN_NAME</code></td>
+<td><code>Pablo Chumacero</code> — opcional</td>
+</tr>
+</tbody>
+</table>
+<p><code>PUBLIC_URL</code> es opcional. La aplicación toma automáticamente la dirección que Render proporciona. Si después utilizas un dominio propio, agrega <code>PUBLIC_URL=https://TU-DOMINIO</code> sin rutas ni fragmentos.</p>
+<p>No agregues <code>DATABASE_HOST=127.0.0.1</code>, <code>SMTP_HOST</code>, <code>SMTP_PORT</code> ni <code>COOKIE_SECURE=0</code> para esta publicación. No copies todo el <code>.env</code> de tu instalación local.</p>
+<p>Las variables <code>PRIVACY_RESPONSIBLE</code>, <code>PRIVACY_ADDRESS</code>, <code>PRIVACY_CONTACT</code>, <code>PRIVACY_OPERATOR</code> y <code>PRIVACY_OPERATOR_CONTACT</code> permiten personalizar la política. Si no las agregas, se conservan los datos académicos de Pablo y la referencia a UPC San Miguel, sin atribuir a la universidad responsabilidad por el proyecto.</p>
+<h2 id="7-publicar-y-comprobar-el-primer-arranque">7 Publicar y comprobar el primer arranque</h2>
+<ol>
+<li>Revisa que el plan elegido sea <strong>Free</strong> y pulsa <strong>Deploy Web Service</strong>.</li>
+<li>Espera a que Render termine de descargar dependencias y compilar. En <strong>Logs</strong> verás la construcción de la imagen y el arranque de Gunicorn.</li>
+<li>Durante ese primer arranque se crean las tablas y un único administrador de plataforma, siempre que la base esté vacía.</li>
+<li>Cuando el estado sea <strong>Live</strong>, abre la dirección HTTPS que Render muestre. Se parecerá a <code>https://barriocuenta-xxxx.onrender.com</code>, pero debes usar tu URL real.</li>
+<li>Para verificar el servicio, abre esa misma dirección terminada en <code>/api/health</code>. Debe responder:</li>
+</ol>
+<pre><code class="language-json">{&quot;application&quot;:&quot;BarrioCuenta&quot;,&quot;status&quot;:&quot;ok&quot;}
+</code></pre>
+<ol>
+<li>Entra con <code>BOOTSTRAP_ADMIN_EMAIL</code> y la contraseña que elegiste.</li>
+<li>Abre la bandeja de ese correo real, busca <strong>Tu código BarrioCuenta</strong> y escribe el código de seis dígitos. Revisa también spam. El código caduca a los cinco minutos con la configuración predeterminada.</li>
+</ol>
+<p>No utilices <code>admin@demo.local</code> ni <code>Barrio2026!</code> en la publicación nueva. Las credenciales locales no se trasladan ni se crean automáticamente en la nube. Tampoco se activa el reloj simulado.</p>
+<p><strong>Resultado esperado:</strong> ves el módulo de tiendas del administrador de plataforma.</p>
+<h2 id="8-crear-el-negocio-y-probar-los-tres-perfiles">8 Crear el negocio y probar los tres perfiles</h2>
+<ol>
+<li>Como plataforma, registra una tienda ficticia.</li>
+<li>En <strong>Usuarios y accesos</strong>, crea su administrador de negocio con un correo real al que tengas acceso y una contraseña nueva. El remitente de Brevo y el destinatario de acceso pueden ser distintos.</li>
+<li>Cierra sesión e ingresa como ese administrador. El segundo factor llega al correo que le asignaste.</li>
+<li>Registra un producto de prueba, su stock y su precio al crédito.</li>
+<li>Registra un cliente ficticio, informa la política y configura su cuenta, tasa, límite y calendario.</li>
+<li>Simula una venta y confirma solo si los importes coinciden con lo esperado.</li>
+<li>Desde la cuenta, invita al cliente al portal usando otro correo real disponible. Cada usuario debe tener un correo único.</li>
+<li>El cliente abre el enlace recibido, establece su contraseña y acepta la política. Después inicia sesión y completa su propio segundo factor.</li>
+<li>Comprueba que ve únicamente sus cuentas y cronogramas.</li>
+<li>Actualiza la página o vuelve a desplegar: las operaciones deben seguir en Neon.</li>
+</ol>
+<p>Puedes usar correos con alias si tu proveedor los admite, pero comprueba primero su recepción. No introduzcas datos personales o deudas reales para la exposición.</p>
+<h2 id="9-retirar-la-contrasena-de-inicializacion">9 Retirar la contraseña de inicialización</h2>
+<p>Cuando hayas comprobado el acceso del primer administrador:</p>
+<ol>
+<li>En Render, abre <strong>Environment</strong>.</li>
+<li>Elimina <code>BOOTSTRAP_ADMIN_PASSWORD</code> y, si quieres, <code>BOOTSTRAP_ADMIN_EMAIL</code> y <code>BOOTSTRAP_ADMIN_NAME</code>.</li>
+<li>Guarda y deja que Render vuelva a desplegar.</li>
+<li>Confirma que puedes entrar con la misma cuenta y contraseña.</li>
+</ol>
+<p>La contraseña se conserva como hash en Neon. Los siguientes arranques no crean otro administrador ni cambian la contraseña existente. Guarda tus credenciales: esta versión todavía no dispone de recuperación de contraseña por autoservicio. No cambies la conexión a otra base vacía sin configurar nuevamente la inicialización.</p>
+<h2 id="10-como-se-generan-los-estados-en-el-plan-gratuito">10 Cómo se generan los estados en el plan gratuito</h2>
+<p>Render puede suspender el servicio cuando no hay visitas. No se mantiene un segundo proceso permanente ni un servicio cron de pago. Al consultar cuentas o estados desde una sesión de negocio o cliente, BarrioCuenta recupera los cortes pendientes, con sus fechas históricas, como máximo una vez cada 60 segundos por proceso.</p>
+<p>Por eso un estado no se emite exactamente en el instante del corte mientras la aplicación duerme: aparecerá en la primera consulta autenticada posterior. El total de cobranza se calcula a la fecha actual. El endpoint público de salud no genera estados ni mantiene artificialmente despierta la aplicación.</p>
+<h2 id="11-actualizar-el-proyecto-despues">11 Actualizar el proyecto después</h2>
+<ol>
+<li>Conserva un respaldo de Neon antes de un cambio importante del esquema.</li>
+<li>Modifica los archivos de código y súbelos al mismo repositorio mediante un nuevo commit.</li>
+<li>Si el despliegue automático está habilitado, Render construirá la nueva versión. En caso contrario, usa <strong>Manual Deploy → Deploy latest commit</strong>.</li>
+<li>Revisa <strong>Logs</strong> y <code>/api/health</code>.</li>
+<li>Prueba el acceso, una cuenta y un estado. Las claves permanecen en Environment y los datos en Neon.</li>
+</ol>
+<p>No ejecutes <code>backend.seed</code> para reinicializar una publicación. El esquema se actualiza al arrancar; no se borran ni reemplazan automáticamente sus usuarios y operaciones.</p>
+<h2 id="12-resolver-problemas-frecuentes">12 Resolver problemas frecuentes</h2>
+<table>
+<thead>
+<tr>
+<th>Problema</th>
+<th>Qué revisar</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Render no encuentra Dockerfile</td>
+<td>Debe estar en la raíz; revisa Root Directory y que no se llame Dockerfile.txt.</td>
+</tr>
+<tr>
+<td>Falla <code>npm ci</code></td>
+<td>Sube package.json y package-lock.json juntos. Revisa el error completo del build.</td>
+</tr>
+<tr>
+<td>Configura DATABASE_URL o no se permite base local</td>
+<td>Pega la cadena real de Neon, no la de PostgreSQL de tu PC ni un comando psql completo.</td>
+</tr>
+<tr>
+<td>Error de contraseña o conexión a PostgreSQL</td>
+<td>Copia otra vez la cadena desde Neon; conserva su codificación y parámetros TLS.</td>
+</tr>
+<tr>
+<td>Falta PUBLIC_URL</td>
+<td>En Render suele detectarse sola; si hace falta, pega tu URL pública HTTPS exacta en esa variable.</td>
+</tr>
+<tr>
+<td>Falta administrador inicial</td>
+<td>En una base vacía, agrega correo real y contraseña válida en BOOTSTRAP_ADMIN_EMAIL/PASSWORD.</td>
+</tr>
+<tr>
+<td>El servicio inicia pero no llega el código</td>
+<td>Revisa API Key, remitente verificado, aprobación transaccional, cuota y registros de correo de Brevo; luego spam y Reenviar código.</td>
+</tr>
+<tr>
+<td>No fue posible enviar el correo</td>
+<td>Usa una clave API de Brevo, no una clave SMTP. Confirma que MAIL_FROM_EMAIL coincide con un remitente habilitado.</td>
+</tr>
+<tr>
+<td>Credenciales locales no funcionan</td>
+<td>La nube nueva usa el administrador que configuraste, no los perfiles demo.local.</td>
+</tr>
+<tr>
+<td>El primer acceso tarda</td>
+<td>El plan Free despierta después de la inactividad; espera aproximadamente un minuto.</td>
+</tr>
+<tr>
+<td>No aparecen estados nuevos</td>
+<td>Abre cuentas o estados con una sesión de negocio/cliente; espera a que venza el intervalo de recuperación y actualiza.</td>
+</tr>
+<tr>
+<td>Una imagen o una venta desaparece</td>
+<td>Confirma que estás entrando al mismo servicio y a la misma base de Neon. Las imágenes actuales se guardan en la base, no en el disco efímero de Render.</td>
+</tr>
+<tr>
+<td>Olvidaste la contraseña</td>
+<td>No borres la base ni esperes que volver a poner BOOTSTRAP_ADMIN_PASSWORD la cambie. Solicita una recuperación controlada.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="13-costos-y-limites">13 Costos y límites</h2>
+<p>Según los planes consultados el 29 de octubre de 2026, Render tiene servicio web Free con suspensión tras 15 minutos de inactividad; Neon ofrece un plan Free con límites de almacenamiento y cómputo; Brevo incluye 300 correos diarios. Los planes pueden cambiar. Revisa el panel de cada proveedor y mantén seleccionados los planes gratuitos.</p>
+<p>Render advierte que sus instancias gratuitas son para pruebas y proyectos personales. Esta configuración sirve para la exposición académica, sin disponibilidad continua garantizada. La aplicación y sus imágenes comparten el almacenamiento de Neon; usa imágenes pequeñas para conservar espacio. Brevo puede aceptar un correo y después retrasar su entrega por cuota o verificaciones, por lo que la aceptación de la API no garantiza recepción inmediata.</p>
+<h2 id="14-fuentes-oficiales">14 Fuentes oficiales</h2>
+<ul>
+<li><a href="https://render.com/docs/docker">Docker en Render</a>.</li>
+<li><a href="https://render.com/docs/free">Límites gratuitos de Render</a>.</li>
+<li><a href="https://render.com/docs/environment-variables">Variables automáticas y URL de Render</a>.</li>
+<li><a href="https://render.com/docs/blueprint-spec">Blueprint render.yaml</a>.</li>
+<li><a href="https://neon.com/docs/guides/sqlalchemy">Neon con SQLAlchemy</a>.</li>
+<li><a href="https://neon.com/pricing">Precios de Neon</a>.</li>
+<li><a href="https://developers.brevo.com/docs/send-a-transactional-email">Envío transaccional por API de Brevo</a>.</li>
+<li><a href="https://developers.brevo.com/docs/getting-started-with-senders-and-domains">Remitentes y dominios de Brevo</a>.</li>
+<li><a href="https://help.brevo.com/hc/en-us/articles/208580669-FAQs-What-are-the-limits-of-the-Free-plan">Límites del plan gratuito de Brevo</a>.</li>
+</ul>
+<h2 id="alternativa-con-blueprint">Alternativa con Blueprint</h2>
+<p>El paquete incluye <code>render.yaml</code>. Si prefieres esta ruta, crea <strong>New → Blueprint</strong>, conecta el repositorio y completa las variables privadas que Render solicite. No crees además otro Web Service: ambas rutas publican la misma aplicación. El archivo define únicamente un servicio web Free; no crea bases de pago ni procesos adicionales. La ruta manual de los apartados 5 y 6 permite revisar todos los campos antes de publicar.</p></main></html>

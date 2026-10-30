@@ -1,0 +1,143 @@
+{
+  "fecha": "2026-10-29",
+  "metodo": "Recalculo independiente con Decimal de 50 dígitos; tasas, gracia, anualidad y cada fila; comparación contra el motor de la aplicación. HALF_UP a dos decimales.",
+  "casos": [
+    {
+      "caso": "A1",
+      "capital": 1000,
+      "tasa_anual": 24,
+      "tipo": "effective",
+      "capitalizacion": null,
+      "gracia": 11,
+      "financiado": "1006.59",
+      "cuotas": [
+        "347.74",
+        "347.74",
+        "347.75"
+      ],
+      "resultado": "COINCIDE"
+    },
+    {
+      "caso": "A2",
+      "capital": 500,
+      "tasa_anual": 18,
+      "tipo": "effective",
+      "capitalizacion": null,
+      "gracia": 35,
+      "financiado": "508.11",
+      "cuotas": [
+        "88.85",
+        "88.85",
+        "88.85",
+        "88.85",
+        "88.85",
+        "88.85"
+      ],
+      "resultado": "COINCIDE"
+    },
+    {
+      "caso": "A3",
+      "capital": 2500,
+      "tasa_anual": 30,
+      "tipo": "effective",
+      "capitalizacion": null,
+      "gracia": 31,
+      "financiado": "2557.12",
+      "cuotas": [
+        "674.99",
+        "674.99",
+        "674.99",
+        "675.00"
+      ],
+      "resultado": "COINCIDE"
+    },
+    {
+      "caso": "A4",
+      "capital": 900,
+      "tasa_anual": 0,
+      "tipo": "effective",
+      "capitalizacion": null,
+      "gracia": 11,
+      "financiado": "900.00",
+      "cuotas": [
+        "300.00",
+        "300.00",
+        "300.00"
+      ],
+      "resultado": "COINCIDE"
+    },
+    {
+      "caso": "B1",
+      "capital": 1000,
+      "tasa_anual": 24,
+      "tipo": "nominal",
+      "capitalizacion": 30,
+      "gracia": 11,
+      "financiado": "1007.29",
+      "cuotas": [
+        "349.28",
+        "349.28",
+        "349.29"
+      ],
+      "resultado": "COINCIDE"
+    },
+    {
+      "caso": "B2",
+      "capital": 1200,
+      "tasa_anual": 36,
+      "tipo": "nominal",
+      "capitalizacion": 1,
+      "gracia": 35,
+      "financiado": "1242.72",
+      "cuotas": [
+        "229.74",
+        "229.74",
+        "229.74",
+        "229.74",
+        "229.74",
+        "229.73"
+      ],
+      "resultado": "COINCIDE"
+    },
+    {
+      "caso": "B3",
+      "capital": 800,
+      "tasa_anual": 18,
+      "tipo": "nominal",
+      "capitalizacion": 90,
+      "gracia": 31,
+      "financiado": "812.22",
+      "cuotas": [
+        "210.61",
+        "210.61",
+        "210.61",
+        "210.62"
+      ],
+      "resultado": "COINCIDE"
+    },
+    {
+      "caso": "B4",
+      "capital": 1500,
+      "tasa_anual": 12,
+      "tipo": "nominal",
+      "capitalizacion": 180,
+      "gracia": 11,
+      "financiado": "1505.35",
+      "cuotas": [
+        "259.53",
+        "259.53",
+        "259.53",
+        "259.53",
+        "259.53",
+        "259.53"
+      ],
+      "resultado": "COINCIDE"
+    }
+  ],
+  "mora_referencia": {
+    "capital": "1007.29",
+    "dias": 4,
+    "tasa_mensual": "0.03",
+    "mora": "3.98"
+  }
+}

@@ -1,0 +1,142 @@
+[
+  {
+    "venta": 1,
+    "cuenta": 13,
+    "cliente": "DEMO Presentación - Pago único",
+    "modalidad": "single",
+    "snapshot": {
+      "principal": "1000.00",
+      "financed": "1007.29",
+      "reserve": "1000.00",
+      "grace": 11,
+      "base": "2026-09-26",
+      "cut": "2026-09-20T23:59:59",
+      "rows": [
+        {
+          "number": 1,
+          "due": "2026-09-26",
+          "opening": "1000.00",
+          "interest": "7.29",
+          "principal": "1000.00",
+          "amount": "1007.29",
+          "balance": "0.00"
+        }
+      ],
+      "monthly": ".02",
+      "late_monthly": ".03",
+      "currency": "PEN",
+      "mode": "single",
+      "created": "2026-09-15T10:32:00",
+      "cut_day": 20,
+      "pay_day": 26,
+      "cut_time": "23:59:59",
+      "rate_terms": {
+        "rate": "2",
+        "rate_kind": "effective",
+        "rate_period": 30,
+        "capitalization": null,
+        "late_rate": "3",
+        "late_kind": "effective",
+        "late_period": 30,
+        "late_capitalization": null
+      }
+    },
+    "pagos": [
+      {
+        "id": 1,
+        "fecha": "2026-10-29T19:01:46.368526",
+        "total": "1040.58",
+        "detalle": {
+          "currency": "PEN",
+          "used": "1000.00",
+          "available": "2000.00",
+          "due": [
+            {
+              "id": 1,
+              "sale_id": 1,
+              "number": 1,
+              "due": "2026-09-26",
+              "principal": "1000.00",
+              "interest": "7.29",
+              "amount": "1007.29",
+              "late": "33.29",
+              "late_days": 33,
+              "late_monthly": ".03"
+            }
+          ],
+          "next": {
+            "due": "2026-09-26",
+            "amount": "1007.29",
+            "number": 1,
+            "sale_id": 1
+          },
+          "total": "1040.58"
+        }
+      }
+    ],
+    "estados": 2
+  },
+  {
+    "venta": 2,
+    "cuenta": 14,
+    "cliente": "DEMO Presentación - Tres cuotas",
+    "modalidad": "installments",
+    "snapshot": {
+      "principal": "1000.00",
+      "financed": "1007.29",
+      "reserve": "1007.29",
+      "grace": 11,
+      "base": "2026-09-26",
+      "cut": "2026-09-20T23:59:59",
+      "rows": [
+        {
+          "number": 1,
+          "due": "2026-10-26",
+          "opening": "1007.29",
+          "interest": "20.15",
+          "principal": "329.13",
+          "amount": "349.28",
+          "balance": "678.16"
+        },
+        {
+          "number": 2,
+          "due": "2026-11-26",
+          "opening": "678.16",
+          "interest": "13.56",
+          "principal": "335.72",
+          "amount": "349.28",
+          "balance": "342.44"
+        },
+        {
+          "number": 3,
+          "due": "2026-12-26",
+          "opening": "342.44",
+          "interest": "6.85",
+          "principal": "342.44",
+          "amount": "349.29",
+          "balance": "0.00"
+        }
+      ],
+      "monthly": ".02",
+      "late_monthly": ".03",
+      "currency": "PEN",
+      "mode": "installments",
+      "created": "2026-09-15T10:32:00",
+      "cut_day": 20,
+      "pay_day": 26,
+      "cut_time": "23:59:59",
+      "rate_terms": {
+        "rate": "2",
+        "rate_kind": "effective",
+        "rate_period": 30,
+        "capitalization": null,
+        "late_rate": "3",
+        "late_kind": "effective",
+        "late_period": 30,
+        "late_capitalization": null
+      }
+    },
+    "pagos": [],
+    "estados": 2
+  }
+]

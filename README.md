@@ -1,9 +1,20 @@
-# BarrioCuenta para Render y Neon
+# BarrioCuenta · Entrega académica
 
-Abre docs/MANUAL-DESPLIEGUE-GRATUITO.html.
+Aplicación publicada: https://barriocuenta.onrender.com
 
-Neon: proyecto super-base-33383770, rama production. El esquema ya está aplicado; no se cargaron muestras. Las conexiones privadas están en .env.local de la copia de nube y no están en este ZIP. Configura DATABASE_URL y DATABASE_URL_UNPOOLED en Render, además de Brevo y el primer administrador.
+Abre **docs/entrega/INICIO-ENTREGA-FINAL.html** para el manual de uso, guion de exposición, matriz RF-01 a RF-12, comprobación financiera y capturas.
 
-Pruebas: python -B -m unittest discover -s tests -v
+La entrega complementa el informe tp_vf.docx de análisis y diseño; documenta la construcción posterior. No se creó una cuenta para la profesora.
 
-El informe docs/NEON-CONEXION.md conserva los comandos, resultados y pendientes.
+## Verificación
+
+- `python -m unittest discover -s tests -v`
+- `npm ci` y `npm run build`
+
+## Configuración
+
+Render aloja la aplicación; PostgreSQL está en Neon y el correo usa Brevo. Usa `.env.render.example` como referencia y configura claves privadas en el proveedor. No se incluyen conexiones ni contraseñas reales.
+
+La publicación contiene tiendas y datos ficticios DEMO, además de dos escenarios de exposición en Mi Tienda Test. El ZIP no exporta la base de datos pública. `backend.seed` crea ejemplos solo en una base local vacía; `scripts/presentation_demo.py` es una función de carga explícita probada, no se ejecuta al arrancar el servidor.
+
+Instalación local y accesos ficticios: ver el manual final. Despliegue: docs/MANUAL-DESPLIEGUE-GRATUITO.html. Sus notas de publicación pendiente documentan el procedimiento inicial; la dirección pública ya está operativa.
